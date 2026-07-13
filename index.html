@@ -309,6 +309,23 @@
     position:absolute; top:20px; right:24px;
     color:var(--ivory); font-size:28px; cursor:pointer; font-family:sans-serif;
   }
+  .nav-arrow{
+    position:absolute;
+    top:50%;
+    transform:translateY(-50%);
+    color:#fff;
+    font-size:44px;
+    line-height:1;
+    cursor:pointer;
+    padding:10px 16px;
+    user-select:none;
+    font-family:sans-serif;
+    opacity:0.75;
+    transition:opacity .15s;
+  }
+  .nav-arrow:hover{ opacity:1; }
+  .nav-prev{ left:6px; }
+  .nav-next{ right:6px; }
 
   footer{
     text-align:center;
@@ -376,6 +393,8 @@
 
 <div class="lightbox" id="lightbox">
   <span class="close" id="lightboxClose">&times;</span>
+  <span class="nav-arrow nav-prev" id="lightboxPrev">&#8249;</span>
+  <span class="nav-arrow nav-next" id="lightboxNext">&#8250;</span>
   <div>
     <img id="lightboxImg" alt="확대된 사진">
     <div class="cap" id="lightboxCap"></div>
@@ -581,7 +600,7 @@ snapsRef.orderByChild('createdAt').on('value', (snapshot) => {
     card.innerHTML = `<img src="${photos[0].photo}" alt="${name}">${badge}<div class="cap">${name}</div>`;
     card.addEventListener('click', () => {
       if (photos.length === 1) {
-        openLightbox(photos[0]);
+        openLightbox(photos, 0);
       } else {
         openFolder(name, photos);
       }
@@ -599,28 +618,76 @@ document.getElementById('folderClose').addEventListener('click', () => folderOve
 function openFolder(name, photos){
   folderTitle.textContent = `${name}님이 올린 사진 (${photos.length}장)`;
   folderGrid.innerHTML = '';
-  photos.forEach((val) => {
+  photos.forEach((val, idx) => {
     const img = document.createElement('img');
     img.src = val.photo;
     img.alt = name;
-    img.addEventListener('click', () => openLightbox(val));
+    img.addEventListener('click', () => openLightbox(photos, idx));
     folderGrid.appendChild(img);
   });
   folderOverlay.classList.add('show');
 }
 
-// ---------- 라이트박스 (확대보기) ----------
+// ---------- 라이트박스 (확대보기 + 좌우 넘기기) ----------
 const lightbox = document.getElementById('lightbox');
 const lightboxImg = document.getElementById('lightboxImg');
 const lightboxCap = document.getElementById('lightboxCap');
 document.getElementById('lightboxClose').addEventListener('click', () => lightbox.classList.remove('show'));
 lightbox.addEventListener('click', (e) => { if(e.target === lightbox) lightbox.classList.remove('show'); });
 
-function openLightbox(val){
-  lightboxImg.src = val.photo;
-  lightboxCap.textContent = val.name;
+let currentPhotoSet = [];
+let currentPhotoIdx = 0;
+
+function openLightbox(photos, index){
+  currentPhotoSet = photos;
+  currentPhotoIdx = index || 0;
+  renderLightboxPhoto();
   lightbox.classList.add('show');
 }
+
+function renderLightboxPhoto(){
+  const val = currentPhotoSet[currentPhotoIdx];
+  lightboxImg.src = val.photo;
+  lightboxCap.textContent = currentPhotoSet.length > 1
+    ? `${val.name} (${currentPhotoIdx + 1}/${currentPhotoSet.length})`
+    : val.name;
+  const showArrows = currentPhotoSet.length > 1;
+  document.getElementById('lightboxPrev').style.display = showArrows ? 'block' : 'none';
+  document.getElementById('lightboxNext').style.display = showArrows ? 'block' : 'none';
+}
+
+function showPrevPhoto(){
+  if (currentPhotoSet.length < 2) return;
+  currentPhotoIdx = (currentPhotoIdx - 1 + currentPhotoSet.length) % currentPhotoSet.length;
+  renderLightboxPhoto();
+}
+function showNextPhoto(){
+  if (currentPhotoSet.length < 2) return;
+  currentPhotoIdx = (currentPhotoIdx + 1) % currentPhotoSet.length;
+  renderLightboxPhoto();
+}
+
+document.getElementById('lightboxPrev').addEventListener('click', (e) => { e.stopPropagation(); showPrevPhoto(); });
+document.getElementById('lightboxNext').addEventListener('click', (e) => { e.stopPropagation(); showNextPhoto(); });
+
+document.addEventListener('keydown', (e) => {
+  if (!lightbox.classList.contains('show')) return;
+  if (e.key === 'ArrowLeft') showPrevPhoto();
+  if (e.key === 'ArrowRight') showNextPhoto();
+  if (e.key === 'Escape') lightbox.classList.remove('show');
+});
+
+// 모바일 스와이프 지원
+let touchStartX = null;
+lightbox.addEventListener('touchstart', (e) => { touchStartX = e.changedTouches[0].screenX; });
+lightbox.addEventListener('touchend', (e) => {
+  if (touchStartX === null) return;
+  const deltaX = e.changedTouches[0].screenX - touchStartX;
+  if (Math.abs(deltaX) > 50) {
+    if (deltaX > 0) showPrevPhoto(); else showNextPhoto();
+  }
+  touchStartX = null;
+});
 
 // ---------- 관리자 모드 (URL 끝에 ?admin=1 붙이면 전체 다운로드 버튼이 보여요) ----------
 if (new URLSearchParams(window.location.search).get('admin') === '1') {
