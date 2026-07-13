@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>지애 ♥ 제진 | 게스트 스냅</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,500&family=Noto+Serif+KR:wght@400;500;700&family=Pretendard-Regular:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ivory:#FAF6ED;
+    --ivory-deep:#F1E9D8;
+    --navy:#1F2A44;
+    --navy-soft:#3A4664;
+    --gold:#B8912F;
+    --gold-light:#D9BB6C;
+    --blush:#E3C9C0;
+    --shadow: 0 10px 30px rgba(31,42,68,0.15);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--ivory);
+    background-image:
+      radial-gradient(circle at 15% 20%, rgba(184,145,47,0.06) 0, transparent 40%),
+      radial-gradient(circle at 85% 80%, rgba(31,42,68,0.05) 0, transparent 40%);
+    font-family:'Noto Serif KR', serif;
+    color:var(--navy);
+    min-height:100vh;
+    padding-bottom:60px;
+  }
+  header{
+    text-align:center;
+    padding:48px 20px 28px;
+    position:relative;
+  }
+  header .eyebrow{
+    font-family:'Cormorant Garamond', serif;
+    letter-spacing:0.35em;
+    font-size:12px;
+    color:var(--gold);
+    text-transform:uppercase;
+    margin-bottom:10px;
+  }
+  header h1{
+    font-family:'Cormorant Garamond', serif;
+    font-style:italic;
+    font-weight:500;
+    font-size:38px;
+    margin:0 0 6px;
+    color:var(--navy);
+  }
+  header p{
+    font-size:14px;
+    color:var(--navy-soft);
+    margin:0;
+    letter-spacing:0.02em;
+  }
+  header .rule{
+    width:60px;
+    height:1px;
+    background:var(--gold);
+    margin:18px auto 0;
+    opacity:0.6;
+  }
+
+  .upload-card{
+    max-width:480px;
+    margin:0 auto 36px;
+    background:#fff;
+    border-radius:18px;
+    box-shadow:var(--shadow);
+    padding:24px 22px;
+    border:1px solid var(--ivory-deep);
+  }
+  .upload-card label{
+    display:block;
+    font-size:12px;
+    color:var(--navy-soft);
+    margin-bottom:6px;
+    font-family:'Pretendard-Regular', sans-serif;
+  }
+  .upload-card input[type=text]{
+    width:100%;
+    padding:11px 12px;
+    border:1px solid var(--ivory-deep);
+    border-radius:10px;
+    font-size:15px;
+    margin-bottom:16px;
+    font-family:'Pretendard-Regular', sans-serif;
+    background:var(--ivory);
+  }
+  .upload-card input[type=text]:focus{outline:none; border-color:var(--gold-light);}
+
+  #preview-wrap{display:none; margin-bottom:16px;}
+  #preview-wrap img{
+    width:100%;
+    border-radius:12px;
+    display:block;
+  }
+
+  .file-btn{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    width:100%;
+    padding:14px;
+    border-radius:12px;
+    border:1.5px dashed var(--gold-light);
+    background:var(--ivory);
+    color:var(--navy);
+    font-family:'Pretendard-Regular', sans-serif;
+    font-size:14.5px;
+    cursor:pointer;
+    margin-bottom:14px;
+    transition:background .2s;
+  }
+  .file-btn:active{background:var(--ivory-deep);}
+
+  .submit-btn{
+    width:100%;
+    padding:14px;
+    border:none;
+    border-radius:12px;
+    background:var(--navy);
+    color:var(--ivory);
+    font-family:'Cormorant Garamond', serif;
+    font-size:17px;
+    letter-spacing:0.08em;
+    cursor:pointer;
+    transition:background .2s, transform .1s;
+  }
+  .submit-btn:active{transform:scale(0.98);}
+  .submit-btn:disabled{background:#B8BCC6; cursor:not-allowed;}
+
+  .status-msg{
+    text-align:center;
+    font-size:13px;
+    margin-top:12px;
+    min-height:18px;
+    font-family:'Pretendard-Regular', sans-serif;
+  }
+  .status-msg.ok{color:#4C7A5D;}
+  .status-msg.err{color:#B0473F;}
+
+  .gallery-title{
+    text-align:center;
+    font-family:'Cormorant Garamond', serif;
+    font-style:italic;
+    font-size:22px;
+    color:var(--navy-soft);
+    margin:8px 0 22px;
+  }
+
+  .board{
+    max-width:1000px;
+    margin:0 auto;
+    padding:0 16px;
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(150px, 1fr));
+    gap:16px 14px;
+  }
+  .polaroid{
+    background:#fff;
+    padding:10px 10px 34px;
+    border-radius:4px;
+    box-shadow:0 6px 16px rgba(31,42,68,0.14);
+    cursor:pointer;
+    transition:transform .2s;
+    position:relative;
+  }
+  .polaroid:nth-child(3n+1){transform:rotate(-2deg);}
+  .polaroid:nth-child(3n+2){transform:rotate(1.5deg);}
+  .polaroid:nth-child(3n){transform:rotate(-1deg);}
+  .polaroid:hover{transform:scale(1.04) rotate(0deg); z-index:2;}
+  .polaroid img{
+    width:100%;
+    aspect-ratio:1/1;
+    object-fit:cover;
+    border-radius:2px;
+    display:block;
+  }
+  .polaroid .cap{
+    position:absolute;
+    bottom:8px; left:0; right:0;
+    text-align:center;
+    font-family:'Cormorant Garamond', serif;
+    font-size:13px;
+    color:var(--navy-soft);
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    padding:0 8px;
+  }
+
+  .empty-state{
+    text-align:center;
+    color:#A9A08A;
+    font-size:14px;
+    padding:40px 20px;
+    font-family:'Pretendard-Regular', sans-serif;
+  }
+
+  .lightbox{
+    display:none;
+    position:fixed; inset:0;
+    background:rgba(31,42,68,0.92);
+    z-index:50;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+  }
+  .lightbox.show{display:flex;}
+  .lightbox img{max-width:100%; max-height:80vh; border-radius:6px; box-shadow:0 20px 50px rgba(0,0,0,0.4);}
+  .lightbox .cap{color:var(--ivory); text-align:center; margin-top:14px; font-family:'Cormorant Garamond', serif; font-size:18px; font-style:italic;}
+  .lightbox .close{
+    position:absolute; top:20px; right:24px;
+    color:var(--ivory); font-size:28px; cursor:pointer; font-family:sans-serif;
+  }
+
+  footer{
+    text-align:center;
+    margin-top:50px;
+    font-size:11px;
+    color:#B8AF98;
+    letter-spacing:0.05em;
+    font-family:'Pretendard-Regular', sans-serif;
+  }
+
+  #admin-panel{
+    max-width:480px;
+    margin:0 auto 30px;
+    text-align:center;
+  }
+  #admin-panel button{
+    background:var(--gold);
+    color:#fff;
+    border:none;
+    padding:10px 18px;
+    border-radius:20px;
+    font-family:'Pretendard-Regular', sans-serif;
+    font-size:13px;
+    cursor:pointer;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="eyebrow">Jejin &amp; Jiae Wedding</div>
+  <h1>게스트 스냅</h1>
+  <p>오늘의 순간을 남겨주셔서 감사합니다 🤍</p>
+  <div class="rule"></div>
+</header>
+
+<div class="upload-card">
+  <label for="guestName">이름 (선택)</label>
+  <input type="text" id="guestName" placeholder="예: 김지애">
+
+  <div id="preview-wrap">
+    <img id="previewImg" alt="선택한 사진 미리보기">
+  </div>
+
+  <label class="file-btn" for="photoInput">
+    📷 현장에서 찍은 사진을 선택해주세요
+  </label>
+  <input type="file" id="photoInput" accept="image/*" capture="environment" style="display:none;">
+
+  <button class="submit-btn" id="submitBtn" disabled>사진 올리기</button>
+  <div class="status-msg" id="statusMsg"></div>
+</div>
+
+<div id="admin-panel" style="display:none;">
+  <button id="downloadAllBtn">전체 사진 다운로드 (zip)</button>
+</div>
+
+<h2 class="gallery-title">함께 보는 오늘의 스냅</h2>
+<div class="board" id="board">
+  <div class="empty-state" id="emptyState">아직 올라온 사진이 없어요. 첫 번째 사진을 남겨주세요 📸</div>
+</div>
+
+<footer>Jejin ♥ Jiae · 2026.08.01 · CREAST 72 GLASS HALL</footer>
+
+<div class="lightbox" id="lightbox">
+  <span class="close" id="lightboxClose">&times;</span>
+  <div>
+    <img id="lightboxImg" alt="확대된 사진">
+    <div class="cap" id="lightboxCap"></div>
+  </div>
+</div>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+<script>
+/* ============================================================
+   1) 여기에 지애님의 Firebase 프로젝트 정보를 넣어주세요.
+   허니문 앱 만들 때 쓰신 것과 같은 Firebase 콘솔에서
+   [프로젝트 설정 > 일반 > 내 앱]에 가면 이 값들을 볼 수 있어요.
+   (같은 프로젝트를 써도 되고, 새 프로젝트를 만들어도 됩니다)
+   ============================================================ */
+const firebaseConfig = {
+  apiKey: "AIzaSyCPOyk4PUjaRyKmZo73IJAYfb8PAgDmkhQ",
+  authDomain: "guest-snap.firebaseapp.com",
+  databaseURL: "https://guest-snap-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "guest-snap",
+  storageBucket: "guest-snap.firebasestorage.app",
+  messagingSenderId: "304953837360",
+  appId: "1:304953837360:web:89f9546fc3887935c92af5",
+  measurementId: "G-BWMNM7NTN4"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+const snapsRef = db.ref("guestSnaps");
+
+// ---------- 사진 선택 & 미리보기 ----------
+const photoInput = document.getElementById('photoInput');
+const previewWrap = document.getElementById('preview-wrap');
+const previewImg = document.getElementById('previewImg');
+const submitBtn = document.getElementById('submitBtn');
+const statusMsg = document.getElementById('statusMsg');
+const guestNameInput = document.getElementById('guestName');
+
+let compressedDataUrl = null;
+
+photoInput.addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  statusMsg.textContent = '사진을 압축하고 있어요...';
+  statusMsg.className = 'status-msg';
+  try{
+    compressedDataUrl = await compressImage(file, 1800, 0.88);
+    previewImg.src = compressedDataUrl;
+    previewWrap.style.display = 'block';
+    submitBtn.disabled = false;
+    statusMsg.textContent = '';
+  }catch(err){
+    statusMsg.textContent = '사진을 불러오지 못했어요. 다시 시도해주세요.';
+    statusMsg.className = 'status-msg err';
+  }
+});
+
+// 사진 용량을 줄여주는 함수 (긴 변 기준 maxSize px로 축소, JPEG 품질 quality)
+function compressImage(file, maxSize, quality){
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        let { width, height } = img;
+        if (width > height && width > maxSize) {
+          height = Math.round(height * (maxSize / width));
+          width = maxSize;
+        } else if (height > maxSize) {
+          width = Math.round(width * (maxSize / height));
+          height = maxSize;
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.onerror = reject;
+      img.src = e.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+// ---------- 업로드 ----------
+submitBtn.addEventListener('click', () => {
+  if (!compressedDataUrl) return;
+  submitBtn.disabled = true;
+  statusMsg.textContent = '업로드 중이에요...';
+  statusMsg.className = 'status-msg';
+
+  const newSnap = {
+    name: guestNameInput.value.trim() || '익명의 하객',
+    photo: compressedDataUrl,
+    createdAt: firebase.database.ServerValue.TIMESTAMP
+  };
+
+  snapsRef.push(newSnap)
+    .then(() => {
+      statusMsg.textContent = '사진이 올라갔어요! 감사합니다 🤍';
+      statusMsg.className = 'status-msg ok';
+      photoInput.value = '';
+      guestNameInput.value = '';
+      previewWrap.style.display = 'none';
+      compressedDataUrl = null;
+      submitBtn.disabled = true;
+      setTimeout(()=>{ statusMsg.textContent=''; }, 4000);
+    })
+    .catch((err) => {
+      statusMsg.textContent = '업로드에 실패했어요. 인터넷 연결을 확인해주세요.';
+      statusMsg.className = 'status-msg err';
+      submitBtn.disabled = false;
+    });
+});
+
+// ---------- 실시간 갤러리 ----------
+const board = document.getElementById('board');
+const emptyState = document.getElementById('emptyState');
+let allSnaps = [];
+
+snapsRef.orderByChild('createdAt').on('value', (snapshot) => {
+  const data = snapshot.val();
+  board.innerHTML = '';
+  allSnaps = [];
+
+  if (!data) {
+    board.appendChild(emptyState);
+    return;
+  }
+
+  const items = Object.entries(data).sort((a,b) => (b[1].createdAt||0) - (a[1].createdAt||0));
+
+  items.forEach(([key, val]) => {
+    allSnaps.push(val);
+    const card = document.createElement('div');
+    card.className = 'polaroid';
+    card.innerHTML = `<img src="${val.photo}" alt="${val.name}"><div class="cap">${val.name}</div>`;
+    card.addEventListener('click', () => openLightbox(val));
+    board.appendChild(card);
+  });
+});
+
+// ---------- 라이트박스 (확대보기) ----------
+const lightbox = document.getElementById('lightbox');
+const lightboxImg = document.getElementById('lightboxImg');
+const lightboxCap = document.getElementById('lightboxCap');
+document.getElementById('lightboxClose').addEventListener('click', () => lightbox.classList.remove('show'));
+lightbox.addEventListener('click', (e) => { if(e.target === lightbox) lightbox.classList.remove('show'); });
+
+function openLightbox(val){
+  lightboxImg.src = val.photo;
+  lightboxCap.textContent = val.name;
+  lightbox.classList.add('show');
+}
+
+// ---------- 관리자 모드 (URL 끝에 ?admin=1 붙이면 전체 다운로드 버튼이 보여요) ----------
+if (new URLSearchParams(window.location.search).get('admin') === '1') {
+  document.getElementById('admin-panel').style.display = 'block';
+}
+document.getElementById('downloadAllBtn').addEventListener('click', async () => {
+  const btn = document.getElementById('downloadAllBtn');
+  btn.textContent = '압축하는 중...';
+  btn.disabled = true;
+  const zip = new JSZip();
+  allSnaps.forEach((val, i) => {
+    const base64 = val.photo.split(',')[1];
+    zip.file(`${String(i+1).padStart(3,'0')}_${val.name}.jpg`, base64, {base64:true});
+  });
+  const blob = await zip.generateAsync({type:'blob'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'guest-snaps.zip';
+  a.click();
+  URL.revokeObjectURL(url);
+  btn.textContent = '전체 사진 다운로드 (zip)';
+  btn.disabled = false;
+});
+</script>
+</body>
+</html>
