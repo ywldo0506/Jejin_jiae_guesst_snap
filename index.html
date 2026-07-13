@@ -222,6 +222,68 @@
     text-overflow:ellipsis;
     padding:0 8px;
   }
+  .polaroid .count-badge{
+    position:absolute;
+    top:6px; right:6px;
+    background:var(--navy);
+    color:#fff;
+    font-family:'Pretendard-Regular', sans-serif;
+    font-size:11px;
+    padding:2px 8px;
+    border-radius:20px;
+    box-shadow:0 2px 6px rgba(0,0,0,0.25);
+  }
+  .polaroid.stacked::before,
+  .polaroid.stacked::after{
+    content:'';
+    position:absolute;
+    inset:0;
+    background:#fff;
+    border-radius:4px;
+    box-shadow:0 6px 16px rgba(31,42,68,0.10);
+    z-index:-1;
+  }
+  .polaroid.stacked::before{ transform:rotate(-4deg) translateY(2px); }
+  .polaroid.stacked::after{ transform:rotate(3deg) translateY(2px); }
+
+  .folder-overlay{
+    display:none;
+    position:fixed; inset:0;
+    background:var(--ivory);
+    z-index:45;
+    flex-direction:column;
+    padding:0;
+  }
+  .folder-overlay.show{display:flex;}
+  .folder-header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:18px 22px;
+    background:#fff;
+    border-bottom:1px solid var(--ivory-deep);
+    font-family:'Cormorant Garamond', serif;
+    font-style:italic;
+    font-size:20px;
+    color:var(--navy);
+  }
+  .folder-header .close{ font-family:sans-serif; font-style:normal; cursor:pointer; font-size:24px; color:var(--navy-soft); }
+  .folder-grid{
+    flex:1;
+    overflow-y:auto;
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(140px, 1fr));
+    gap:12px;
+    padding:18px;
+  }
+  .folder-grid img{
+    width:100%;
+    aspect-ratio:1/1;
+    object-fit:cover;
+    border-radius:8px;
+    cursor:pointer;
+    box-shadow:0 4px 12px rgba(31,42,68,0.12);
+  }
 
   .empty-state{
     text-align:center;
@@ -318,6 +380,14 @@
     <img id="lightboxImg" alt="확대된 사진">
     <div class="cap" id="lightboxCap"></div>
   </div>
+</div>
+
+<div class="folder-overlay" id="folderOverlay">
+  <div class="folder-header">
+    <span id="folderTitle"></span>
+    <span class="close" id="folderClose">&times;</span>
+  </div>
+  <div class="folder-grid" id="folderGrid"></div>
 </div>
 
 <!-- Firebase -->
@@ -471,7 +541,7 @@ submitBtn.addEventListener('click', async () => {
   setTimeout(()=>{ statusMsg.textContent=''; }, 5000);
 });
 
-// ---------- 실시간 갤러리 ----------
+// ---------- 실시간 갤러리 (업로더별 폴더로 묶어서 표시) ----------
 const board = document.getElementById('board');
 const emptyState = document.getElementById('emptyState');
 let allSnaps = [];
@@ -487,16 +557,57 @@ snapsRef.orderByChild('createdAt').on('value', (snapshot) => {
   }
 
   const items = Object.entries(data).sort((a,b) => (b[1].createdAt||0) - (a[1].createdAt||0));
+  items.forEach(([key, val]) => allSnaps.push(val));
 
+  // 이름별로 묶기 (같은 이름 = 같은 폴더). 각 그룹은 이미 최신순으로 정렬돼있음.
+  const groups = {};
   items.forEach(([key, val]) => {
-    allSnaps.push(val);
+    const name = val.name || '익명의 하객';
+    if (!groups[name]) groups[name] = [];
+    groups[name].push(val);
+  });
+
+  // 그룹을 "가장 최근에 올린 시각" 기준으로 정렬
+  const groupList = Object.entries(groups).sort((a, b) => {
+    const aTime = a[1][0].createdAt || 0;
+    const bTime = b[1][0].createdAt || 0;
+    return bTime - aTime;
+  });
+
+  groupList.forEach(([name, photos]) => {
     const card = document.createElement('div');
-    card.className = 'polaroid';
-    card.innerHTML = `<img src="${val.photo}" alt="${val.name}"><div class="cap">${val.name}</div>`;
-    card.addEventListener('click', () => openLightbox(val));
+    card.className = photos.length > 1 ? 'polaroid stacked' : 'polaroid';
+    const badge = photos.length > 1 ? `<div class="count-badge">${photos.length}장</div>` : '';
+    card.innerHTML = `<img src="${photos[0].photo}" alt="${name}">${badge}<div class="cap">${name}</div>`;
+    card.addEventListener('click', () => {
+      if (photos.length === 1) {
+        openLightbox(photos[0]);
+      } else {
+        openFolder(name, photos);
+      }
+    });
     board.appendChild(card);
   });
 });
+
+// ---------- 폴더 보기 (한 사람이 올린 사진 여러 장 모아보기) ----------
+const folderOverlay = document.getElementById('folderOverlay');
+const folderTitle = document.getElementById('folderTitle');
+const folderGrid = document.getElementById('folderGrid');
+document.getElementById('folderClose').addEventListener('click', () => folderOverlay.classList.remove('show'));
+
+function openFolder(name, photos){
+  folderTitle.textContent = `${name}님이 올린 사진 (${photos.length}장)`;
+  folderGrid.innerHTML = '';
+  photos.forEach((val) => {
+    const img = document.createElement('img');
+    img.src = val.photo;
+    img.alt = name;
+    img.addEventListener('click', () => openLightbox(val));
+    folderGrid.appendChild(img);
+  });
+  folderOverlay.classList.add('show');
+}
 
 // ---------- 라이트박스 (확대보기) ----------
 const lightbox = document.getElementById('lightbox');
