@@ -44,9 +44,10 @@
   }
   header h1{
     font-family:'Cormorant Garamond', serif;
-    font-style:italic;
-    font-weight:500;
-    font-size:38px;
+    font-style:normal;
+    font-weight:600;
+    font-size:40px;
+    letter-spacing:0.12em;
     margin:0 0 6px;
     color:var(--navy);
   }
@@ -93,10 +94,38 @@
   .upload-card input[type=text]:focus{outline:none; border-color:var(--gold-light);}
 
   #preview-wrap{display:none; margin-bottom:16px;}
-  #preview-wrap img{
+  #preview-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(72px, 1fr));
+    gap:8px;
+  }
+  .preview-item{position:relative;}
+  .preview-item img{
     width:100%;
-    border-radius:12px;
+    aspect-ratio:1/1;
+    object-fit:cover;
+    border-radius:10px;
     display:block;
+  }
+  .preview-item .remove-x{
+    position:absolute;
+    top:-6px; right:-6px;
+    width:20px; height:20px;
+    background:var(--navy);
+    color:#fff;
+    border-radius:50%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:13px;
+    cursor:pointer;
+    line-height:1;
+  }
+  #preview-count{
+    font-size:12.5px;
+    color:var(--navy-soft);
+    margin-bottom:8px;
+    font-family:'Pretendard-Regular', sans-serif;
   }
 
   .file-btn{
@@ -249,23 +278,24 @@
 
 <header>
   <div class="eyebrow">Jejin &amp; Jiae Wedding</div>
-  <h1>게스트 스냅</h1>
-  <p>오늘의 순간을 남겨주셔서 감사합니다 🤍</p>
+  <h1>GUEST SNAP</h1>
+  <p>오늘의 마법 같은 순간,<br>우리의 이야기를 함께 남겨 주세요</p>
   <div class="rule"></div>
 </header>
 
 <div class="upload-card">
   <label for="guestName">이름 (선택)</label>
-  <input type="text" id="guestName" placeholder="예: 김지애">
+  <input type="text" id="guestName" placeholder="예: 윤지애">
 
   <div id="preview-wrap">
-    <img id="previewImg" alt="선택한 사진 미리보기">
+    <div id="preview-count"></div>
+    <div id="preview-grid"></div>
   </div>
 
   <label class="file-btn" for="photoInput">
-    📷 현장에서 찍은 사진을 선택해주세요
+    📷 현장에서 찍은 사진을 선택해주세요 (여러 장 선택 가능)
   </label>
-  <input type="file" id="photoInput" accept="image/*" capture="environment" style="display:none;">
+  <input type="file" id="photoInput" accept="image/*" multiple style="display:none;">
 
   <button class="submit-btn" id="submitBtn" disabled>사진 올리기</button>
   <div class="status-msg" id="statusMsg"></div>
@@ -317,32 +347,61 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 const snapsRef = db.ref("guestSnaps");
 
-// ---------- 사진 선택 & 미리보기 ----------
+// ---------- 사진 선택 & 미리보기 (여러 장 지원) ----------
 const photoInput = document.getElementById('photoInput');
 const previewWrap = document.getElementById('preview-wrap');
-const previewImg = document.getElementById('previewImg');
+const previewGrid = document.getElementById('preview-grid');
+const previewCount = document.getElementById('preview-count');
 const submitBtn = document.getElementById('submitBtn');
 const statusMsg = document.getElementById('statusMsg');
 const guestNameInput = document.getElementById('guestName');
 
-let compressedDataUrl = null;
+let selectedPhotos = []; // [{dataUrl}, ...]
 
 photoInput.addEventListener('change', async (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
+  const files = Array.from(e.target.files);
+  if (!files.length) return;
   statusMsg.textContent = '사진을 압축하고 있어요...';
   statusMsg.className = 'status-msg';
   try{
-    compressedDataUrl = await compressImage(file, 1800, 0.88);
-    previewImg.src = compressedDataUrl;
-    previewWrap.style.display = 'block';
-    submitBtn.disabled = false;
+    for (const file of files) {
+      const dataUrl = await compressImage(file, 1800, 0.88);
+      selectedPhotos.push({ dataUrl });
+    }
+    renderPreviewGrid();
     statusMsg.textContent = '';
   }catch(err){
     statusMsg.textContent = '사진을 불러오지 못했어요. 다시 시도해주세요.';
     statusMsg.className = 'status-msg err';
   }
+  photoInput.value = ''; // 같은 파일 다시 선택 가능하도록 초기화
 });
+
+function renderPreviewGrid(){
+  previewGrid.innerHTML = '';
+  selectedPhotos.forEach((p, idx) => {
+    const item = document.createElement('div');
+    item.className = 'preview-item';
+    item.innerHTML = `<img src="${p.dataUrl}"><div class="remove-x" data-idx="${idx}">×</div>`;
+    previewGrid.appendChild(item);
+  });
+  previewGrid.querySelectorAll('.remove-x').forEach(btn => {
+    btn.addEventListener('click', () => {
+      selectedPhotos.splice(Number(btn.dataset.idx), 1);
+      renderPreviewGrid();
+    });
+  });
+  if (selectedPhotos.length > 0) {
+    previewWrap.style.display = 'block';
+    previewCount.textContent = `선택된 사진 ${selectedPhotos.length}장`;
+    submitBtn.disabled = false;
+    submitBtn.textContent = `사진 ${selectedPhotos.length}장 올리기`;
+  } else {
+    previewWrap.style.display = 'none';
+    submitBtn.disabled = true;
+    submitBtn.textContent = '사진 올리기';
+  }
+}
 
 // 사진 용량을 줄여주는 함수 (긴 변 기준 maxSize px로 축소, JPEG 품질 quality)
 function compressImage(file, maxSize, quality){
@@ -374,35 +433,42 @@ function compressImage(file, maxSize, quality){
   });
 }
 
-// ---------- 업로드 ----------
-submitBtn.addEventListener('click', () => {
-  if (!compressedDataUrl) return;
+// ---------- 업로드 (여러 장 순서대로) ----------
+submitBtn.addEventListener('click', async () => {
+  if (!selectedPhotos.length) return;
   submitBtn.disabled = true;
-  statusMsg.textContent = '업로드 중이에요...';
-  statusMsg.className = 'status-msg';
+  const name = guestNameInput.value.trim() || '익명의 하객';
+  const total = selectedPhotos.length;
+  let done = 0;
+  let failed = 0;
 
-  const newSnap = {
-    name: guestNameInput.value.trim() || '익명의 하객',
-    photo: compressedDataUrl,
-    createdAt: firebase.database.ServerValue.TIMESTAMP
-  };
+  for (const p of selectedPhotos) {
+    statusMsg.textContent = `업로드 중이에요... (${done + 1}/${total})`;
+    statusMsg.className = 'status-msg';
+    try {
+      await snapsRef.push({
+        name: name,
+        photo: p.dataUrl,
+        createdAt: firebase.database.ServerValue.TIMESTAMP
+      });
+      done++;
+    } catch (err) {
+      failed++;
+    }
+  }
 
-  snapsRef.push(newSnap)
-    .then(() => {
-      statusMsg.textContent = '사진이 올라갔어요! 감사합니다 🤍';
-      statusMsg.className = 'status-msg ok';
-      photoInput.value = '';
-      guestNameInput.value = '';
-      previewWrap.style.display = 'none';
-      compressedDataUrl = null;
-      submitBtn.disabled = true;
-      setTimeout(()=>{ statusMsg.textContent=''; }, 4000);
-    })
-    .catch((err) => {
-      statusMsg.textContent = '업로드에 실패했어요. 인터넷 연결을 확인해주세요.';
-      statusMsg.className = 'status-msg err';
-      submitBtn.disabled = false;
-    });
+  if (failed === 0) {
+    statusMsg.textContent = `사진 ${done}장이 올라갔어요! 감사합니다 🤍`;
+    statusMsg.className = 'status-msg ok';
+  } else {
+    statusMsg.textContent = `${done}장 성공, ${failed}장 실패했어요. 실패한 사진은 다시 시도해주세요.`;
+    statusMsg.className = 'status-msg err';
+  }
+
+  guestNameInput.value = '';
+  selectedPhotos = [];
+  renderPreviewGrid();
+  setTimeout(()=>{ statusMsg.textContent=''; }, 5000);
 });
 
 // ---------- 실시간 갤러리 ----------
